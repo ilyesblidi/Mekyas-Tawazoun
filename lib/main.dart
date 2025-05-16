@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gsheets/gsheets.dart';
+import 'package:mekyas_tawazoun/pages/main_page.dart';
 import 'package:mekyas_tawazoun/screens/splash_screen.dart';
 
 // create credentials
@@ -47,7 +48,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: SplashScreen(),
+      home: MainPage(),
     );
   }
 }
