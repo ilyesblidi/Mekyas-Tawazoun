@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -24,6 +25,22 @@ import 'package:flutter/material.dart';
       _passwordController.dispose();
       _confirmPasswordController.dispose();
       super.dispose();
+    }
+
+    Future addUserDetails(String firstName, String lastName, String email) async {
+      try {
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null) {
+          await FirebaseFirestore.instance.collection('users').doc(uid).set({
+            'first name': firstName,
+            'last name': lastName,
+            'email': email,
+            'uid': uid,
+          });
+        }
+      } catch (e) {
+        print('Failed to add user details: $e');
+      }
     }
 
     Future<void> signUp() async {
@@ -66,11 +83,13 @@ import 'package:flutter/material.dart';
       try {
         await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
 
+        await addUserDetails(firstName, lastName, email);
+
         // Optionally, you can store the user's first and last name in the database
         // For example, using Firestore:
         // await FirebaseFirestore.instance.collection('users').add({
-        //   'first_name': firstName,
-        //   'last_name': lastName,
+        //   'first name': firstName,
+        //   'last name': lastName,
         //   'email': email,
         //   'uid': FirebaseAuth.instance.currentUser?.uid,
         // });
