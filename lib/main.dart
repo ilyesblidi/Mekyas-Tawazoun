@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gsheets/gsheets.dart';
 import 'package:mekyas_tawazoun/pages/main_page.dart';
-import 'package:mekyas_tawazoun/screens/splash_screen.dart';
 
 // create credentials
   const _credentials = r'''

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "671206344840",
+    "project_id": "mekyas-tawazoun-app",
+    "storage_bucket": "mekyas-tawazoun-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:671206344840:android:7b085c3f0ba60b7480f73d",
+        "android_client_info": {
+          "package_name": "com.example.mekyas_tawazoun"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_AB2IwxPpp531dZn8KVE3uOZk4plyDVE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
