@@ -1,6 +1,9 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:gsheets/gsheets.dart';
-import 'package:mekyas_tawazoun/pages/main_page.dart';
+import 'package:mekyas_tawazoun/auth/control_page.dart';
+
+import 'firebase_options.dart';
 
 // create credentials
   const _credentials = r'''
@@ -25,6 +28,15 @@ import 'package:mekyas_tawazoun/pages/main_page.dart';
 
 
 void main() async {
+
+  /// init firebase
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+
   // init Gsheet
   final _gsheets = GSheets(_credentials);
 
@@ -32,7 +44,7 @@ void main() async {
   final _spreadsheet = await _gsheets.spreadsheet(_spreadsheetId);
 
   // get worksheet by title
-  final _worksheet = await _spreadsheet.worksheetByTitle('Worksheet1');
+  final _worksheet = _spreadsheet.worksheetByTitle('Worksheet1');
   
   // updating a cell
   await _worksheet!.values.insertValue('Hello World',row: 1, column: 1);
@@ -47,7 +59,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: MainPage(),
+      home: ControlPage(),
     );
   }
 }
