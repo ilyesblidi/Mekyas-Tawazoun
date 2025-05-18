@@ -42,7 +42,9 @@ class _MainPageState extends State<MainPage> {
   }
 
   List<Widget> get _pages => [
-    HomePage(firstName: firstName, lastName: lastName, isLoading: isLoading),
+    HomePage(firstName: firstName, lastName: lastName, isLoading: isLoading,
+      onStartDiagnostic: () => setState(() => _selectedIndex = 1),
+    ),
     const DiagnosticPage(),
     const ActionPlanPage(),
     const ProfilePage(),
@@ -63,24 +65,19 @@ class _MainPageState extends State<MainPage> {
           selectedLabelStyle: const TextStyle(
             fontFamily: 'Cairo',
             fontWeight: FontWeight.bold,
+            fontSize: 14, // Set a fixed size
           ),
-          unselectedLabelStyle: const TextStyle(fontFamily: 'Cairo'),
+          unselectedLabelStyle: const TextStyle(
+            fontFamily: 'Cairo',
+            fontSize: 14, // Match the selected size
+          ),
           currentIndex: _selectedIndex,
           onTap: (index) => setState(() => _selectedIndex = index),
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'الرئيسية'),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.medical_services),
-              label: 'التشخيص',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.event_note),
-              label: 'المخطط العملي',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person),
-              label: 'الملف الشخصي',
-            ),
+            BottomNavigationBarItem(icon: Icon(Icons.medical_services), label: 'التشخيص'),
+            BottomNavigationBarItem(icon: Icon(Icons.event_note), label: 'المخطط العملي'),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'الملف الشخصي'),
           ],
         ),
       ),
