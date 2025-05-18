@@ -119,8 +119,12 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     final prefs = await SharedPreferences.getInstance();
     final Map<String, dynamic> result = {};
     questionsMap.forEach((field, questions) {
+      final fieldAnswers = <String, int>{};
+      for (var q in questions) {
+        fieldAnswers[q] = _answers[field]?[q] ?? 0; // Default to 0 if not answered
+      }
       result[field] = {
-        'answers': _answers[field] ?? {},
+        'answers': fieldAnswers,
         'percentage': _calculateFieldPercentage(field, questions).toStringAsFixed(1),
       };
     });
