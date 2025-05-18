@@ -39,13 +39,13 @@ class _WelcomeUserCard extends StatelessWidget {
                     'مرحبًا${firstName.isNotEmpty ? '، $firstName' : ''} 👋',
                     style: const TextStyle(
                       fontFamily: 'Cairo',
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                       letterSpacing: 0.5,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 7),
                   const Text(
                     'نتمنى لك تجربة متوازنة وملهمة!',
                     style: TextStyle(

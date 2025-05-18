@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -143,6 +144,8 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                               onPressed: () async {
                                 try {
+                                  final prefs = await SharedPreferences.getInstance();
+                                  await prefs.remove('diagnostic_results'); // Clear cached diagnostic data
                                   await FirebaseAuth.instance.signOut();
                                   // Navigate to login page
                                 } catch (e) {

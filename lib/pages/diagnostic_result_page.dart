@@ -67,15 +67,7 @@ import 'package:flutter/material.dart';
               IconButton(
                 icon: const Icon(Icons.share, color: Color(0xFF1A6F8E)),
                 tooltip: 'مشاركة النتائج',
-                onPressed: () {
-                  final summary = fields.map((f) =>
-                    '${fieldNames[f]}: ${result[f]?['percentage'] ?? '0'}%'
-                  ).join('\n');
-                  SharePlus.instance.share(
-                    'نتائجي في التشخيص:\n$summary',
-                    subject: 'نتائج التشخيص',
-                  );
-                },
+                onPressed: () {  },
               ),
             ],
           ),

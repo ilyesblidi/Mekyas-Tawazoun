@@ -57,29 +57,80 @@ class _MainPageState extends State<MainPage> {
       child: Scaffold(
         backgroundColor: const Color(0xFFEAF6FB),
         body: _pages[_selectedIndex],
-        bottomNavigationBar: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFF1A6F8E),
-          unselectedItemColor: Colors.grey,
-          selectedLabelStyle: const TextStyle(
-            fontFamily: 'Cairo',
-            fontWeight: FontWeight.bold,
-            fontSize: 14, // Set a fixed size
+
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF1A6F8E), Color(0xFF83C5BE)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(30),
+              topRight: Radius.circular(30),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 20,
+                offset: const Offset(0, -5),
+              ),
+            ],
           ),
-          unselectedLabelStyle: const TextStyle(
-            fontFamily: 'Cairo',
-            fontSize: 14, // Match the selected size
+          child: ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(30),
+              topRight: Radius.circular(30),
+            ),
+            child: BottomNavigationBar(
+              type: BottomNavigationBarType.fixed,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              selectedItemColor: Colors.white,
+              unselectedItemColor: Colors.white70,
+              showUnselectedLabels: true,
+              selectedLabelStyle: const TextStyle(
+                fontFamily: 'Cairo',
+                fontWeight: FontWeight.bold,
+                fontSize: 18, // Increased size
+                letterSpacing: 0.5,
+                shadows: [
+                  Shadow(
+                    color: Colors.black26,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontFamily: 'Cairo',
+                fontSize: 16, // Increased size
+              ),
+              currentIndex: _selectedIndex,
+              onTap: (index) => setState(() => _selectedIndex = index),
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home, size: 30),
+                  label: 'الرئيسية',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.medical_services, size: 30),
+                  label: 'التشخيص',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.event_note, size: 30),
+                  label: 'المخطط',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person, size: 30),
+                  label: 'الملف',
+                ),
+              ],
+            ),
           ),
-          currentIndex: _selectedIndex,
-          onTap: (index) => setState(() => _selectedIndex = index),
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'الرئيسية'),
-            BottomNavigationBarItem(icon: Icon(Icons.medical_services), label: 'التشخيص'),
-            BottomNavigationBarItem(icon: Icon(Icons.event_note), label: 'المخطط العملي'),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'الملف الشخصي'),
-          ],
         ),
+
+
       ),
     );
   }
