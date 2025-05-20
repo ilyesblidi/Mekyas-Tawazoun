@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:gsheets/gsheets.dart';
@@ -36,6 +37,10 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  // Enable Firestore offline persistence using Settings
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
 
   // init Gsheet
   final _gsheets = GSheets(_credentials);

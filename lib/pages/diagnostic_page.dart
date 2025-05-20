@@ -32,11 +32,13 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
   };
 
   static const Map<String, String> _fieldDescriptions = {
-    'الجانب_الروحي': 'هذا الجانب يركز على تطويرك الروحي من خلال العبادات والتأمل.',
+    'الجانب_الروحي':
+        'هذا الجانب يركز على تطويرك الروحي من خلال العبادات والتأمل.',
     'الجانب_الاجتماعي': 'هذا الجانب يركز على علاقاتك الاجتماعية وصلة الرحم.',
     'الجانب_العلمي': 'هذا الجانب يركز على تطويرك العلمي والمعرفي.',
     'الجانب_الصحي': 'هذا الجانب يركز على صحتك الجسدية والعادات الصحية.',
-    'جانب_تطوير_المهارات': 'هذا الجانب يركز على صحتك النفسية والتعامل مع الضغوط.',
+    'جانب_تطوير_المهارات':
+        'هذا الجانب يركز على صحتك النفسية والتعامل مع الضغوط.',
     'الجانب_المالي': 'هذا الجانب يركز على تطورك المهني وإدارة أمورك المالية.',
   };
 
@@ -45,7 +47,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     super.initState();
     _questionsFuture = _loadQuestions();
     _checkIfHasResult();
-    _syncFromFirestoreIfNeeded();
   }
 
   Future<void> _checkIfHasResult() async {
@@ -56,6 +57,28 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
         _showResult = true;
         _lastResult = Map<String, dynamic>.from(json.decode(jsonString));
       });
+    } else {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final doc =
+            await FirebaseFirestore.instance
+                .collection('diagnostic_results')
+                .doc(user.uid)
+                .get();
+        if (doc.exists) {
+          final data = doc.data();
+          if (data != null && data['answers'] != null) {
+            await prefs.setString(
+              'diagnostic_results',
+              json.encode(data['answers']),
+            );
+            setState(() {
+              _showResult = true;
+              _lastResult = Map<String, dynamic>.from(data['answers']);
+            });
+          }
+        }
+      }
     }
   }
 
@@ -63,29 +86,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     final jsonString = await rootBundle.loadString('lib/assets/questions.json');
     final Map<String, dynamic> data = json.decode(jsonString);
     return data.map((key, value) => MapEntry(key, List<String>.from(value)));
-  }
-
-  Future<void> _syncFromFirestoreIfNeeded() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    final doc = await FirebaseFirestore.instance
-        .collection('diagnostic_results')
-        .doc(user.uid)
-        .get();
-    if (doc.exists) {
-      final data = doc.data();
-      if (data != null && data['answers'] != null) {
-        final Map<String, dynamic> answers = Map<String, dynamic>.from(data['answers']);
-        setState(() {
-          _answers = {
-            for (var field in answers.keys)
-              field: Map<String, int>.from(answers[field]),
-          };
-        });
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('diagnostic_results', json.encode(data['answers']));
-      }
-    }
   }
 
   void _onScoreSelected(String field, String question, int score) {
@@ -121,11 +121,14 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
     questionsMap.forEach((field, questions) {
       final fieldAnswers = <String, int>{};
       for (var q in questions) {
-        fieldAnswers[q] = _answers[field]?[q] ?? 0; // Default to 0 if not answered
+        fieldAnswers[q] = _answers[field]?[q] ?? 0;
       }
       result[field] = {
         'answers': fieldAnswers,
-        'percentage': _calculateFieldPercentage(field, questions).toStringAsFixed(1),
+        'percentage': _calculateFieldPercentage(
+          field,
+          questions,
+        ).toStringAsFixed(1),
       };
     });
     await prefs.setString('diagnostic_results', json.encode(result));
@@ -144,20 +147,35 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
   Future<void> _onFinish(Map<String, List<String>> questionsMap) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('تأكيد التشخيص', textAlign: TextAlign.right, style: TextStyle(fontFamily: 'Cairo')),
-        content: const Text('هل أنت متأكد من إنهاء التشخيص؟', textAlign: TextAlign.right, style: TextStyle(fontFamily: 'Cairo')),
-        actions: [
-          TextButton(
-            child: const Text('إلغاء', style: TextStyle(fontFamily: 'Cairo')),
-            onPressed: () => Navigator.pop(context, false),
+      builder:
+          (context) => AlertDialog(
+            title: const Text(
+              'تأكيد التشخيص',
+              textAlign: TextAlign.right,
+              style: TextStyle(fontFamily: 'Cairo'),
+            ),
+            content: const Text(
+              'هل أنت متأكد من إنهاء التشخيص؟',
+              textAlign: TextAlign.right,
+              style: TextStyle(fontFamily: 'Cairo'),
+            ),
+            actions: [
+              TextButton(
+                child: const Text(
+                  'إلغاء',
+                  style: TextStyle(fontFamily: 'Cairo'),
+                ),
+                onPressed: () => Navigator.pop(context, false),
+              ),
+              ElevatedButton(
+                child: const Text(
+                  'تأكيد',
+                  style: TextStyle(fontFamily: 'Cairo'),
+                ),
+                onPressed: () => Navigator.pop(context, true),
+              ),
+            ],
           ),
-          ElevatedButton(
-            child: const Text('تأكيد', style: TextStyle(fontFamily: 'Cairo')),
-            onPressed: () => Navigator.pop(context, true),
-          ),
-        ],
-      ),
     );
     if (confirmed == true) {
       await _saveResults(questionsMap);
@@ -171,59 +189,6 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
         });
       }
     }
-  }
-
-  Widget _buildScoreScaleBar() {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      color: Colors.white,
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: _scoreLabels.entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: const Color(0xFF83C5BE),
-                      radius: 16,
-                      child: Text(
-                        entry.key.toString(),
-                        style: const TextStyle(
-                          fontFamily: 'Cairo',
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    SizedBox(
-                      width: 70,
-                      child: Text(
-                        entry.value,
-                        style: const TextStyle(
-                          fontFamily: 'Cairo',
-                          fontSize: 11,
-                          color: Color(0xFF1A6F8E),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildDiagnosticContent(BuildContext context) {
@@ -254,15 +219,19 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
         return Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: LinearProgressIndicator(
-                value: (_currentFieldIndex + 1) / fields.length,
-                backgroundColor: Colors.grey[300],
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1A6F8E)),
-                minHeight: 7,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: LinearProgressIndicator(
+                  value: (_currentFieldIndex + 1) / fields.length,
+                  backgroundColor: Colors.grey[200],
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Color(0xFF1A6F8E),
+                  ),
+                  minHeight: 10,
+                ),
               ),
             ),
-            _buildScoreScaleBar(),
             Padding(
               padding: const EdgeInsets.only(top: 8, bottom: 4),
               child: Text(
@@ -276,24 +245,35 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Card(
-                color: Colors.white,
-                elevation: 2,
+                color: const Color(0xFF1A6F8E),
+                elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
-                  child: Text(
-                    field,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontFamily: 'Cairo',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                      color: Color(0xFF1A6F8E),
-                    ),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 18,
+                    horizontal: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.category, color: Colors.white, size: 32),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          field,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontFamily: 'Cairo',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 22,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -304,23 +284,26 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                 _fieldDescriptions[field] ?? '',
                 style: const TextStyle(
                   fontFamily: 'Cairo',
-                  fontSize: 14,
-                  color: Colors.grey,
+                  fontSize: 15,
+                  color: Color(0xFF1A6F8E),
                 ),
                 textAlign: TextAlign.center,
               ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                'النسبة: ${percentage.toStringAsFixed(0)}%',
-                style: const TextStyle(
-                  fontFamily: 'Cairo',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: Color(0xFF1A6F8E),
+              child: Chip(
+                backgroundColor: const Color(0xFF83C5BE),
+                label: Text(
+                  'النسبة: ${percentage.toStringAsFixed(0)}%',
+                  style: const TextStyle(
+                    fontFamily: 'Cairo',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.white,
+                  ),
                 ),
-                textAlign: TextAlign.center,
+                avatar: const Icon(Icons.percent, color: Colors.white),
               ),
             ),
             Expanded(
@@ -332,23 +315,29 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                   final field = fields[fieldIndex];
                   final questions = questionsMap[field]!;
                   return AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
+                    duration: const Duration(milliseconds: 400),
                     child: ListView.separated(
                       key: ValueKey(field),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       itemCount: questions.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (context, qIndex) {
                         final question = questions[qIndex];
                         final selected = _answers[field]?[question] ?? 0;
                         return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                          elevation: 4,
+                          margin: const EdgeInsets.symmetric(
+                            vertical: 8,
+                            horizontal: 4,
+                          ),
+                          elevation: 6,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(18),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -356,22 +345,66 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                                   question,
                                   style: const TextStyle(
                                     fontFamily: 'Cairo',
-                                    fontSize: 16,
+                                    fontSize: 17,
                                     color: Color(0xFF1A6F8E),
+                                    fontWeight: FontWeight.bold,
                                   ),
                                   textAlign: TextAlign.right,
                                 ),
                                 const SizedBox(height: 16),
-                                Slider(
-                                  value: selected.toDouble(),
-                                  min: 0,
-                                  max: 5,
-                                  divisions: 5,
-                                  label: _scoreLabels[selected],
-                                  onChanged: (value) => _onScoreSelected(field, question, value.toInt()),
-                                  activeColor: const Color(0xFF006D77),
-                                  inactiveColor: Colors.grey[300],
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: List.generate(6, (score) {
+                                    final isSelected = selected == score;
+                                    return GestureDetector(
+                                      onTap:
+                                          () => _onScoreSelected(
+                                            field,
+                                            question,
+                                            score,
+                                          ),
+                                      child: AnimatedContainer(
+                                        duration: const Duration(
+                                          milliseconds: 200,
+                                        ),
+                                        width: 36,
+                                        height: 36,
+                                        decoration: BoxDecoration(
+                                          color:
+                                              isSelected
+                                                  ? const Color(0xFF1A6F8E)
+                                                  : Colors.grey[200],
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
+                                          border:
+                                              isSelected
+                                                  ? Border.all(
+                                                    color: Colors.orange,
+                                                    width: 2,
+                                                  )
+                                                  : null,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            score.toString(),
+                                            style: TextStyle(
+                                              fontFamily: 'Cairo',
+                                              color:
+                                                  isSelected
+                                                      ? Colors.white
+                                                      : Colors.black54,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }),
                                 ),
+                                const SizedBox(height: 10),
                                 Text(
                                   _scoreLabels[selected]!,
                                   style: const TextStyle(
@@ -398,30 +431,63 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   if (_currentFieldIndex > 0)
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Color(0xFF83C5BE), size: 32),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF83C5BE),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      label: const Text(
+                        'السابق',
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          color: Colors.white,
+                        ),
+                      ),
                       onPressed: () => _goToPage(_currentFieldIndex - 1),
-                      tooltip: 'السابق',
                     )
                   else
-                    const SizedBox(width: 48),
+                    const SizedBox(width: 100),
                   if (_currentFieldIndex < fields.length - 1)
-                    IconButton(
-                      icon: const Icon(Icons.arrow_forward, color: Color(0xFF1A6F8E), size: 32),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1A6F8E),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(
+                        Icons.arrow_forward,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'التالي',
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          color: Colors.white,
+                        ),
+                      ),
                       onPressed: () => _goToPage(_currentFieldIndex + 1),
-                      tooltip: 'التالي',
                     )
                   else
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF006D77),
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        textStyle: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.check, color: Colors.white),
+                      label: const Text(
+                        'إنهاء التشخيص',
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          color: Colors.white,
+                        ),
                       ),
                       onPressed: () => _onFinish(questionsMap),
-                      icon: const Icon(Icons.check, color: Colors.white),
-                      label: const Text('إنهاء التشخيص', style: TextStyle(color: Colors.white)),
                     ),
                 ],
               ),
@@ -454,37 +520,60 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
         ),
         body: AnimatedSwitcher(
           duration: const Duration(milliseconds: 500),
-          child: _showResult && _lastResult != null
-              ? DiagnosticResultPage(
-                  result: _lastResult!,
-                  onRetake: () async {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('تأكيد إعادة التشخيص', textAlign: TextAlign.right, style: TextStyle(fontFamily: 'Cairo')),
-                        content: const Text('هل أنت متأكد من رغبتك في إعادة التشخيص؟ سيتم حذف الإجابات السابقة.', textAlign: TextAlign.right, style: TextStyle(fontFamily: 'Cairo')),
-                        actions: [
-                          TextButton(child: const Text('إلغاء', style: TextStyle(fontFamily: 'Cairo')), onPressed: () => Navigator.pop(context, false)),
-                          ElevatedButton(child: const Text('تأكيد', style: TextStyle(fontFamily: 'Cairo')), onPressed: () => Navigator.pop(context, true)),
-                        ],
-                      ),
-                    );
-                    if (confirmed == true) {
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.remove('diagnostic_results');
-                      setState(() {
-                        _answers.clear();
-                        _showResult = false;
-                        _lastResult = null;
-                        _currentFieldIndex = 0;
-                      });
-                    }
-                  },
-                  onCreatePlan: () {
-                    ///Navigator.pushNamed(context, '/action_plan', arguments: _lastResult);
-                  },
-                )
-              : _buildDiagnosticContent(context),
+          child:
+              _showResult && _lastResult != null
+                  ? DiagnosticResultPage(
+                    result: _lastResult!,
+                    onRetake: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder:
+                            (context) => AlertDialog(
+                              title: const Text(
+                                'تأكيد إعادة التشخيص',
+                                textAlign: TextAlign.right,
+                                style: TextStyle(fontFamily: 'Cairo'),
+                              ),
+                              content: const Text(
+                                'هل أنت متأكد من رغبتك في إعادة التشخيص؟ سيتم حذف الإجابات السابقة.',
+                                textAlign: TextAlign.right,
+                                style: TextStyle(fontFamily: 'Cairo'),
+                              ),
+                              actions: [
+                                TextButton(
+                                  child: const Text(
+                                    'إلغاء',
+                                    style: TextStyle(fontFamily: 'Cairo'),
+                                  ),
+                                  onPressed:
+                                      () => Navigator.pop(context, false),
+                                ),
+                                ElevatedButton(
+                                  child: const Text(
+                                    'تأكيد',
+                                    style: TextStyle(fontFamily: 'Cairo'),
+                                  ),
+                                  onPressed: () => Navigator.pop(context, true),
+                                ),
+                              ],
+                            ),
+                      );
+                      if (confirmed == true) {
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.remove('diagnostic_results');
+                        setState(() {
+                          _answers.clear();
+                          _showResult = false;
+                          _lastResult = null;
+                          _currentFieldIndex = 0;
+                        });
+                      }
+                    },
+                    onCreatePlan: () {
+                      // Implement navigation to action plan if needed
+                    },
+                  )
+                  : _buildDiagnosticContent(context),
         ),
       ),
     );
