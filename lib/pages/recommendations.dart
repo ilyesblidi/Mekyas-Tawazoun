@@ -239,21 +239,25 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
                                   vertical: 4,
                                 ),
                                 child: TextFormField(
-                                  decoration: const InputDecoration(
+                                  decoration: InputDecoration(
                                     labelText: 'التوصيات',
-                                    labelStyle: TextStyle(fontFamily: 'Cairo'),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.all(
-                                        Radius.circular(12),
-                                      ),
+                                    labelStyle: const TextStyle(fontFamily: 'Cairo'),
+                                    border: const OutlineInputBorder(
+                                      borderRadius: BorderRadius.all(Radius.circular(12)),
                                     ),
-                                    contentPadding: EdgeInsets.symmetric(
+                                    contentPadding: const EdgeInsets.symmetric(
                                       vertical: 12,
                                       horizontal: 12,
                                     ),
+                                    // suffixIcon: IconButton(
+                                    //   icon: const Icon(Icons.auto_awesome, color: Colors.purple),
+                                    //   onPressed: () {
+                                    //   },
+                                    //   tooltip: 'توليد تلقائي',
+                                    // ),
                                   ),
                                   maxLines: 2,
-                                ),
+                                )
                               ),
                             ],
                           );
