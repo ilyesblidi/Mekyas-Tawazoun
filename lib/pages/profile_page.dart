@@ -44,135 +44,146 @@ class _ProfilePageState extends State<ProfilePage> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: const Color(0xFFFDFDFB),
-        body: SafeArea(
-          child:
-              isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        // Header with gradient and avatar
-                        Stack(
-                          children: [
-                            Container(
-                              height: 180,
-                              decoration: const BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Color(0xFF1A6F8E),
-                                    Color(0xFF83C5BE),
-                                  ],
-                                  begin: Alignment.topRight,
-                                  end: Alignment.bottomLeft,
-                                ),
-                                borderRadius: BorderRadius.only(
-                                  bottomLeft: Radius.circular(32),
-                                  bottomRight: Radius.circular(32),
-                                ),
-                              ),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: true,
+          title: const Text(
+            'الملف الشخصي',
+            style: TextStyle(
+              fontFamily: 'Cairo',
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF006D77),
+            ),
+          ),
+          iconTheme: const IconThemeData(color: Color(0xFF1A6F8E)),
+        ),
+        body:
+            isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Profile Header
+                      Card(
+                        elevation: 6,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF1A6F8E), Color(0xFF83C5BE)],
+                              begin: Alignment.topRight,
+                              end: Alignment.bottomLeft,
                             ),
-                            Positioned(
-                              top: 120,
-                              left: 0,
-                              right: 0,
-                              child: Center(
-                                child: CircleAvatar(
-                                  radius: 50,
-                                  backgroundColor: Colors.white,
-                                  child: const Icon(
-                                    Icons.person,
-                                    size: 60,
-                                    color: Color(0xFF006D77),
-                                  ),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 28,
+                            horizontal: 20,
+                          ),
+                          child: Column(
+                            children: [
+                              CircleAvatar(
+                                radius: 50,
+                                backgroundColor: Colors.white,
+                                child: const Icon(
+                                  Icons.person,
+                                  size: 60,
+                                  color: Color(0xFF006D77),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 80),
-                        Text(
-                          userName,
-                          style: const TextStyle(
-                            fontFamily: 'Cairo',
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF006D77),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          userEmail,
-                          style: const TextStyle(
-                            fontFamily: 'Cairo',
-                            fontSize: 16,
-                            color: Color(0xFF006D77),
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        _ProfileActionCard(
-                          icon: Icons.edit,
-                          label: 'تعديل الملف الشخصي',
-                          onTap: () {},
-                        ),
-                        const SizedBox(height: 16),
-                        _ProfileActionCard(
-                          icon: Icons.lock,
-                          label: 'تغيير كلمة المرور',
-                          onTap: () {},
-                        ),
-                        const SizedBox(height: 16),
-                        _ProfileActionCard(
-                          icon: Icons.language,
-                          label: 'تغيير اللغة',
-                          onTap: () {},
-                        ),
-                        const SizedBox(height: 32),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFEF476F),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                elevation: 4,
-                              ),
-                              onPressed: () async {
-                                try {
-                                  final prefs = await SharedPreferences.getInstance();
-                                  await prefs.remove('diagnostic_results'); // Clear cached diagnostic data
-                                  await FirebaseAuth.instance.signOut();
-                                  // Navigate to login page
-                                } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('خطأ في تسجيل الخروج'),
-                                    ),
-                                  );
-                                }
-                              },
-                              child: const Text(
-                                'تسجيل الخروج',
-                                style: TextStyle(
+                              const SizedBox(height: 16),
+                              Text(
+                                userName,
+                                style: const TextStyle(
                                   fontFamily: 'Cairo',
-                                  fontSize: 18,
+                                  fontSize: 24,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),
                               ),
+                              const SizedBox(height: 8),
+                              Text(
+                                userEmail,
+                                style: const TextStyle(
+                                  fontFamily: 'Cairo',
+                                  fontSize: 16,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // Action Cards
+                      _ProfileActionCard(
+                        icon: Icons.edit,
+                        label: 'تعديل الملف الشخصي',
+                        onTap: () {},
+                      ),
+                      const SizedBox(height: 16),
+                      _ProfileActionCard(
+                        icon: Icons.lock,
+                        label: 'تغيير كلمة المرور',
+                        onTap: () {},
+                      ),
+                      const SizedBox(height: 16),
+                      _ProfileActionCard(
+                        icon: Icons.language,
+                        label: 'تغيير اللغة',
+                        onTap: () {},
+                      ),
+                      const SizedBox(height: 32),
+                      // Logout Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFEF476F),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            elevation: 4,
+                          ),
+                          onPressed: () async {
+                            try {
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              await prefs.remove('diagnostic_results');
+                              await FirebaseAuth.instance.signOut();
+                              // Navigate to login page
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('خطأ في تسجيل الخروج'),
+                                ),
+                              );
+                            }
+                          },
+                          child: const Text(
+                            'تسجيل الخروج',
+                            style: TextStyle(
+                              fontFamily: 'Cairo',
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 32),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-        ),
+                ),
       ),
     );
   }

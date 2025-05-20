@@ -1,10 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:mekyas_tawazoun/pages/action_plan_page.dart';
 import 'home_page.dart';
 import 'diagnostic_page.dart';
-import 'action_plan_page.dart';
-import 'profile_page.dart';
+import 'recommendations.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -46,8 +46,8 @@ class _MainPageState extends State<MainPage> {
       onStartDiagnostic: () => setState(() => _selectedIndex = 1),
     ),
     const DiagnosticPage(),
+    const RecomandationsPage(),
     const ActionPlanPage(),
-    const ProfilePage(),
   ];
 
   @override
@@ -118,12 +118,12 @@ class _MainPageState extends State<MainPage> {
                   label: 'التشخيص',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.event_note, size: 30),
-                  label: 'المخطط',
+                  icon: Icon(Icons.tips_and_updates, size: 30),
+                  label: 'التوصيات',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.person, size: 30),
-                  label: 'الملف',
+                  icon: Icon(Icons.checklist, size: 30),
+                  label: 'خطة العمل',
                 ),
               ],
             ),

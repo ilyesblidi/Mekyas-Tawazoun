@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:mekyas_tawazoun/pages/profile_page.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 
-// Enhanced Welcome User Card
+
 class _WelcomeUserCard extends StatelessWidget {
   final String firstName;
 
@@ -9,55 +10,63 @@ class _WelcomeUserCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      margin: const EdgeInsets.only(bottom: 24),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1A6F8E), Color(0xFF83C5BE)],
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfilePage()),
+        );
+      },
+      child: Card(
+        elevation: 6,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        margin: const EdgeInsets.only(bottom: 24),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF1A6F8E), Color(0xFF83C5BE)],
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+            ),
           ),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 32,
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, color: Color(0xFF1A6F8E), size: 38),
-            ),
-            const SizedBox(width: 18),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'مرحبًا${firstName.isNotEmpty ? '، $firstName' : ''} 👋',
-                    style: const TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 7),
-                  const Text(
-                    'نتمنى لك تجربة متوازنة وملهمة!',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 16,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
+          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: Colors.white,
+                child: Icon(Icons.person, color: Color(0xFF1A6F8E), size: 38),
               ),
-            ),
-          ],
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'مرحبًا${firstName.isNotEmpty ? '، $firstName' : ''} 👋',
+                      style: const TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    const Text(
+                      'نتمنى لك تجربة متوازنة وملهمة!',
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 16,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -87,6 +96,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDFDFB),
+
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -108,6 +118,7 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
+
       body: SafeArea(
         child:
             widget.isLoading
