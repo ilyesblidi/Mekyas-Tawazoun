@@ -9,12 +9,11 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 Future<Map<String, dynamic>?> fetchFromFirestore() async {
   final user = FirebaseAuth.instance.currentUser;
   if (user == null) throw Exception('User not logged in');
-  final doc =
-      await FirebaseFirestore.instance
-          .collection('diagnostic_results')
-          .doc(user.uid)
-          .get();
-  if (!doc.exists) return null; // User hasn't taken the diagnostic yet
+  final doc = await FirebaseFirestore.instance
+      .collection('diagnostic_results')
+      .doc(user.uid)
+      .get();
+  if (!doc.exists) return null;
   final data = doc.data();
   if (data == null || data['answers'] == null) {
     throw Exception('Invalid data format');
@@ -54,15 +53,16 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
   bool isLoading = true;
   String? errorMsg;
 
+  Map<String, Map<String, TextEditingController>> recommendationControllers = {};
+
   @override
   void initState() {
     super.initState();
     loadDiagnosticResults()
         .then((data) {
-          setState(() {
-            diagnosticData = data;
-            isLoading = false;
-          });
+          diagnosticData = data;
+          isLoading = false;
+          _initializeControllers(data);
         })
         .catchError((e) {
           setState(() {
@@ -70,6 +70,128 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
             isLoading = false;
           });
         });
+  }
+
+  // Save recommendations to SharedPreferences
+  Future<void> cacheRecommendations(Map<String, dynamic> recs) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('recommendations', json.encode(recs));
+  }
+
+  // Load recommendations from SharedPreferences
+  Future<Map<String, dynamic>> loadCachedRecommendations() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString('recommendations');
+    if (jsonString != null) {
+      return json.decode(jsonString) as Map<String, dynamic>;
+    }
+    return {};
+  }
+
+  void _initializeControllers(Map<String, dynamic>? data) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null || data == null) return;
+
+  // Initialize controllers for all fields/questions
+  for (final field in data.keys) {
+    recommendationControllers[field] = {};
+    for (final question in data[field]['answers'].keys) {
+      recommendationControllers[field]![question] = TextEditingController();
+    }
+  }
+
+  // Try to load recommendations from cache first
+  Map<String, dynamic> recs = await loadCachedRecommendations();
+
+  // If cache is empty, fetch from Firestore and cache it
+  if (recs.isEmpty) {
+    final doc = await FirebaseFirestore.instance
+        .collection('diagnostic_results')
+        .doc(user.uid)
+        .get();
+    if (doc.exists) {
+      recs = doc.data()?['recommendations'] as Map<String, dynamic>? ?? {};
+      await cacheRecommendations(recs);
+    }
+  }
+
+  // Fill controllers
+  for (final field in recs.keys) {
+    final questions = recs[field] as Map<String, dynamic>? ?? {};
+    for (final question in questions.keys) {
+      final recText = questions[question] ?? '';
+      if (recommendationControllers[field] != null &&
+          recommendationControllers[field]![question] != null) {
+        recommendationControllers[field]![question]!.text = recText;
+      }
+    }
+  }
+  setState(() {});
+}
+
+  Future<void> saveRecommendations() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    List<Map<String, dynamic>> actionPlanList = [];
+
+    for (final field in recommendationControllers.keys) {
+      for (final question in recommendationControllers[field]!.keys) {
+        final controller = recommendationControllers[field]![question]!;
+        final recText = controller.text.trim();
+        if (recText.isNotEmpty) {
+          actionPlanList.add({
+            'محور': field,
+            'السؤال': question,
+            'التوصيات_العملية': recText,
+            'عمق_الأثر': null,
+            'سهولة_التطبيق': null,
+            'الأولوية': '',
+            'البداية': DateTime.now(),
+            'النهاية': DateTime.now(),
+            'المدة_أيام': 14,
+            'حالة_المهمة': 'لم تبدأ بعد',
+            'التفاصيل_والتعليقات': '',
+          });
+        }
+      }
+    }
+
+    try {
+      // Save recommendations to diagnostic_results
+      Map<String, dynamic> recsToSave = {};
+      for (final field in recommendationControllers.keys) {
+        recsToSave[field] = {};
+        for (final question in recommendationControllers[field]!.keys) {
+          final controller = recommendationControllers[field]![question]!;
+          recsToSave[field][question] = controller.text.trim();
+        }
+      }
+      await FirebaseFirestore.instance
+          .collection('diagnostic_results')
+          .doc(user.uid)
+          .update({'recommendations': recsToSave});
+
+      // Cache recommendations locally
+      await cacheRecommendations(recsToSave);
+
+      // Save the action plan as a list of objects
+      await FirebaseFirestore.instance
+          .collection('action_plan')
+          .doc(user.uid)
+          .set({
+            'action_plan': actionPlanList,
+            'created_at': FieldValue.serverTimestamp(),
+          });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم حفظ التوصيات وخطة العمل بنجاح')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('حدث خطأ أثناء الحفظ: $e')),
+      );
+    }
   }
 
   @override
@@ -88,7 +210,6 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
         ),
       );
     }
-    // Show message if no diagnostic data
     if (diagnosticData == null || diagnosticData!.isEmpty) {
       return Scaffold(
         body: Center(
@@ -120,6 +241,13 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
           backgroundColor: Colors.white,
           iconTheme: const IconThemeData(color: Color(0xFF1A6F8E)),
           elevation: 1,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.save),
+              onPressed: saveRecommendations,
+              tooltip: 'حفظ التوصيات',
+            ),
+          ],
         ),
         body: ListView.builder(
           padding: const EdgeInsets.all(16),
@@ -200,6 +328,10 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
                         separatorBuilder: (_, __) => const SizedBox(height: 10),
                         itemBuilder: (context, qIdx) {
                           final qEntry = answers.entries.elementAt(qIdx);
+                          recommendationControllers[fieldName] ??= {};
+                          recommendationControllers[fieldName]![qEntry.key] ??= TextEditingController();
+                          final controller = recommendationControllers[fieldName]![qEntry.key]!;
+
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -211,7 +343,6 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
                                   ),
-                                  textDirection: TextDirection.rtl,
                                 ),
                                 trailing: RatingBarIndicator(
                                   rating:
@@ -228,10 +359,6 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
                                   unratedColor: Colors.grey[300],
                                   direction: Axis.horizontal,
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 2,
-                                  horizontal: 0,
-                                ),
                               ),
                               Padding(
                                 padding: const EdgeInsets.symmetric(
@@ -239,25 +366,22 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
                                   vertical: 4,
                                 ),
                                 child: TextFormField(
-                                  decoration: InputDecoration(
+                                  controller: controller,
+                                  decoration: const InputDecoration(
                                     labelText: 'التوصيات',
-                                    labelStyle: const TextStyle(fontFamily: 'Cairo'),
-                                    border: const OutlineInputBorder(
-                                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                                    labelStyle: TextStyle(fontFamily: 'Cairo'),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(12),
+                                      ),
                                     ),
-                                    contentPadding: const EdgeInsets.symmetric(
+                                    contentPadding: EdgeInsets.symmetric(
                                       vertical: 12,
                                       horizontal: 12,
                                     ),
-                                    // suffixIcon: IconButton(
-                                    //   icon: const Icon(Icons.auto_awesome, color: Colors.purple),
-                                    //   onPressed: () {
-                                    //   },
-                                    //   tooltip: 'توليد تلقائي',
-                                    // ),
                                   ),
                                   maxLines: 2,
-                                )
+                                ),
                               ),
                             ],
                           );
