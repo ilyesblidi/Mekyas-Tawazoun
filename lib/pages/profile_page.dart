@@ -15,6 +15,9 @@ class _ProfilePageState extends State<ProfilePage> {
   String userEmail = '';
   bool isLoading = true;
 
+  // Add to your _ProfilePageState
+  bool isSigningOut = false;
+
   @override
   void initState() {
     super.initState();
@@ -146,6 +149,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       // Logout Button
                       SizedBox(
                         width: double.infinity,
+
+                        // In your build method, update the button:
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFEF476F),
@@ -155,31 +160,47 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             elevation: 4,
                           ),
-                          onPressed: () async {
-                            try {
-                              final prefs =
-                                  await SharedPreferences.getInstance();
-                              await prefs.remove('diagnostic_results');
-                              await FirebaseAuth.instance.signOut();
-                              // Navigate to login page
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('خطأ في تسجيل الخروج'),
+                          onPressed: isSigningOut
+                              ? null
+                              : () async {
+                                  setState(() => isSigningOut = true);
+                                  try {
+                                    final prefs = await SharedPreferences.getInstance();
+                                    await prefs.clear();
+                                    await FirebaseAuth.instance.signOut();
+                                    // TODO: Navigate to login page
+                                    Navigator.pushNamedAndRemoveUntil(context, '/auth', (route) => false);
+
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('خطأ في تسجيل الخروج'),
+                                      ),
+                                    );
+                                  } finally {
+                                    if (mounted) setState(() => isSigningOut = false);
+                                  }
+                                },
+                          child: isSigningOut
+                              ? const SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  'تسجيل الخروج',
+                                  style: TextStyle(
+                                    fontFamily: 'Cairo',
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                              );
-                            }
-                          },
-                          child: const Text(
-                            'تسجيل الخروج',
-                            style: TextStyle(
-                              fontFamily: 'Cairo',
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
                         ),
+
                       ),
                     ],
                   ),

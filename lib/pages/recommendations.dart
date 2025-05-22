@@ -103,6 +103,8 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
   // Try to load recommendations from cache first
   Map<String, dynamic> recs = await loadCachedRecommendations();
 
+  print('Loaded recommendations: $recs');
+
   // If cache is empty, fetch from Firestore and cache it
   if (recs.isEmpty) {
     final doc = await FirebaseFirestore.instance
@@ -122,6 +124,7 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
       final recText = questions[question] ?? '';
       if (recommendationControllers[field] != null &&
           recommendationControllers[field]![question] != null) {
+        print('Filling controller for $field, $question with $recText');
         recommendationControllers[field]![question]!.text = recText;
       }
     }
@@ -130,6 +133,9 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
 }
 
   Future<void> saveRecommendations() async {
+
+    /// teh recomndations is saved to the action_plan collection but not in the diagnostic_results collection
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -186,6 +192,18 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
         .set({'action_plan': actionPlanList, 'created_at': FieldValue.serverTimestamp()});
     await prefs.setString('action_plan', json.encode(actionPlanList));
 
+    /// save the recommendations to the diagnostic_results collection
+    await FirebaseFirestore.instance
+        .collection('diagnostic_results')
+        .doc(user.uid)
+        .update({
+          'recommendations': recommendationControllers.map((field, questions) {
+            return MapEntry(field, questions.map((question, controller) {
+              return MapEntry(question, controller.text.trim());
+            }));
+          }),
+        });
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('تم حفظ التوصيات وخطة العمل بنجاح')),
     );
@@ -194,7 +212,13 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF1A6F8E),
+          ),
+        ),
+      );
     }
     if (errorMsg != null) {
       return Scaffold(

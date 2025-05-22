@@ -60,6 +60,25 @@ class _LoginPageState extends State<LoginPage> {
           backgroundColor: Colors.green,
         ),
       );
+      // Navigate to the home page
+      Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);
+
+    } on FirebaseAuthException catch (e) {
+      Navigator.of(context).pop();
+      String message = 'حدث خطأ أثناء تسجيل الدخول';
+      if (e.code == 'user-not-found') {
+        message = 'البريد الإلكتروني غير مسجل';
+      } else if (e.code == 'wrong-password') {
+        message = 'كلمة المرور غير صحيحة';
+      } else if (e.code == 'invalid-email') {
+        message = 'البريد الإلكتروني غير صالح';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+        ),
+      );
     } catch (e) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(

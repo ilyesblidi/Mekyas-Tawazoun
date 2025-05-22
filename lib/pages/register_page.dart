@@ -85,15 +85,6 @@ import 'package:flutter/material.dart';
 
         await addUserDetails(firstName, lastName, email);
 
-        // Optionally, you can store the user's first and last name in the database
-        // For example, using Firestore:
-        // await FirebaseFirestore.instance.collection('users').add({
-        //   'first name': firstName,
-        //   'last name': lastName,
-        //   'email': email,
-        //   'uid': FirebaseAuth.instance.currentUser?.uid,
-        // });
-
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('تم إنشاء الحساب بنجاح'),
@@ -114,10 +105,10 @@ import 'package:flutter/material.dart';
             backgroundColor: Colors.red,
           ),
         );
-
-
       }
 
+      // navigate to the main page
+      Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);
     }
 
     @override
