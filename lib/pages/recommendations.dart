@@ -133,65 +133,62 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    // Load existing action plan from cache
+    final prefs = await SharedPreferences.getInstance();
     List<Map<String, dynamic>> actionPlanList = [];
+    final cached = prefs.getString('action_plan');
+    if (cached != null) {
+      actionPlanList = List<Map<String, dynamic>>.from(json.decode(cached));
+    }
 
+    // Helper to find existing item
+    Map<String, dynamic>? findExisting(String field, String question) {
+      return actionPlanList.firstWhere(
+        (item) => item['محور'] == field && item['السؤال'] == question,
+        orElse: () => {},
+      );
+    }
+
+    // Update or add only modified recommendations
     for (final field in recommendationControllers.keys) {
       for (final question in recommendationControllers[field]!.keys) {
         final controller = recommendationControllers[field]![question]!;
         final recText = controller.text.trim();
         if (recText.isNotEmpty) {
-          actionPlanList.add({
-            'محور': field,
-            'السؤال': question,
-            'التوصيات_العملية': recText,
-            'عمق_الأثر': null,
-            'سهولة_التطبيق': null,
-            'الأولوية': '',
-            'البداية': DateTime.now(),
-            'النهاية': DateTime.now(),
-            'المدة_أيام': 14,
-            'حالة_المهمة': 'لم تبدأ بعد',
-            'التفاصيل_والتعليقات': '',
-          });
+          final existing = findExisting(field, question);
+          if (existing!.isNotEmpty) {
+            // Update existing
+            existing['التوصيات_العملية'] = recText;
+          } else {
+            // Add new
+            actionPlanList.add({
+              'محور': field,
+              'السؤال': question,
+              'التوصيات_العملية': recText,
+              'عمق_الأثر': 1,
+              'سهولة_التطبيق': 1,
+              'الأولوية': '',
+              'البداية': DateTime.now().toIso8601String(),
+              'النهاية': DateTime.now().toIso8601String(),
+              'المدة_أيام': 0,
+              'حالة_المهمة': 'لم تبدأ بعد',
+              'التفاصيل_والتعليقات': '',
+            });
+          }
         }
       }
     }
 
-    try {
-      // Save recommendations to diagnostic_results
-      Map<String, dynamic> recsToSave = {};
-      for (final field in recommendationControllers.keys) {
-        recsToSave[field] = {};
-        for (final question in recommendationControllers[field]!.keys) {
-          final controller = recommendationControllers[field]![question]!;
-          recsToSave[field][question] = controller.text.trim();
-        }
-      }
-      await FirebaseFirestore.instance
-          .collection('diagnostic_results')
-          .doc(user.uid)
-          .update({'recommendations': recsToSave});
+    // Save to Firestore and cache
+    await FirebaseFirestore.instance
+        .collection('action_plan')
+        .doc(user.uid)
+        .set({'action_plan': actionPlanList, 'created_at': FieldValue.serverTimestamp()});
+    await prefs.setString('action_plan', json.encode(actionPlanList));
 
-      // Cache recommendations locally
-      await cacheRecommendations(recsToSave);
-
-      // Save the action plan as a list of objects
-      await FirebaseFirestore.instance
-          .collection('action_plan')
-          .doc(user.uid)
-          .set({
-            'action_plan': actionPlanList,
-            'created_at': FieldValue.serverTimestamp(),
-          });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم حفظ التوصيات وخطة العمل بنجاح')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('حدث خطأ أثناء الحفظ: $e')),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم حفظ التوصيات وخطة العمل بنجاح')),
+    );
   }
 
   @override
@@ -235,19 +232,12 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
         appBar: AppBar(
           centerTitle: true,
           title: const Text(
-            'المخطط العملي',
+            'التوصيات',
             style: TextStyle(fontFamily: 'Cairo'),
           ),
           backgroundColor: Colors.white,
           iconTheme: const IconThemeData(color: Color(0xFF1A6F8E)),
           elevation: 1,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.save),
-              onPressed: saveRecommendations,
-              tooltip: 'حفظ التوصيات',
-            ),
-          ],
         ),
         body: ListView.builder(
           padding: const EdgeInsets.all(16),
@@ -393,6 +383,28 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
             );
           },
         ),
+
+        bottomNavigationBar: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.save),
+              label: const Text('حفظ التوصيات', style: TextStyle(fontFamily: 'Cairo')),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1A6F8E),
+                foregroundColor: Colors.white,
+                textStyle: const TextStyle(fontSize: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: saveRecommendations,
+            ),
+          ),
+        ),
+
       ),
     );
   }
