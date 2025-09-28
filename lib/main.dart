@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mekyas_tawazoun/auth/auth_page.dart';
   import 'package:mekyas_tawazoun/auth/control_page.dart';
   import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:mekyas_tawazoun/pages/login_page.dart';
 import 'package:mekyas_tawazoun/pages/main_page.dart';
 
   import 'firebase_options.dart';
