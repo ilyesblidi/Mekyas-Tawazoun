@@ -66,6 +66,12 @@ class _ActionPlanPageState extends State<ActionPlanPage> {
         }
       }
     }
+    // Filter out empty recommendations
+    items = items.where((item) =>
+      (item['التوصيات_العملية'] != null) &&
+      item['التوصيات_العملية'].toString().trim().isNotEmpty
+    ).toList();
+
     setState(() {
       _allItems = items;
       _isLoading = false;
@@ -163,7 +169,16 @@ class _ActionPlanPageState extends State<ActionPlanPage> {
             ),
             body:
                 _isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? Center(
+                  child: SizedBox(
+                    width: 70,
+                    height: 70,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 7,
+                      color: Color(0xFF1A6F8E),
+                    ),
+                  ),
+                )
                     : _allItems.isEmpty
                     ? const Center(
                       child: Text(
