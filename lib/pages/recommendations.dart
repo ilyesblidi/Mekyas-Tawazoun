@@ -30,6 +30,9 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
   Future<void> _loadCachedThenFirestore() async {
     await _loadCachedRecommendations();
     await _fetchAndUpdateFromFirestore();
+    setState(() {
+      isLoading = false;
+    });
   }
 
   Future<void> _loadCachedRecommendations() async {
@@ -38,9 +41,6 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
     if (jsonString != null) {
       recommendations = json.decode(jsonString) as Map<String, dynamic>;
     }
-    setState(() {
-      isLoading = false;
-    });
   }
 
   Future<void> _fetchAndUpdateFromFirestore() async {
@@ -167,12 +167,12 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
                 ? Center(
                   child: CircularPercentIndicator(
                     radius: 40,
-                    lineWidth: 8,
-                    percent: 0.7,
-                    center: CircularProgressIndicator(
-                      color: Color(0xFF1A6F8E),
-                      strokeWidth: 5,
-                    ),
+                    lineWidth: 7,
+                    percent: 1,
+                    // center: CircularProgressIndicator(
+                    //   color: Color(0xFF1A6F8E),
+                    //   strokeWidth: 5,
+                    // ),
                     progressColor: Color(0xFF1A6F8E),
                     backgroundColor: Colors.grey[200]!,
                     animation: true,
@@ -191,19 +191,19 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
                           snapshot.data!.data() as Map<String, dynamic>;
                       data = docData['answers'] as Map<String, dynamic>? ?? {};
                     }
-                    if (data.isEmpty) {
-                      return Center(
-                        child: Text(
-                          'لم تقم بإجراء الاختبار التشخيصي بعد\nيرجى إجراء الاختبار التشخيصي',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontFamily: 'Cairo',
-                            fontSize: 20,
-                            color: Color(0xFF1A6F8E),
-                          ),
-                        ),
-                      );
-                    }
+                    // if (data.isEmpty) {
+                    //   return Center(
+                    //     child: Text(
+                    //       'لم تقم بإجراء الاختبار التشخيصي بعد\nيرجى إجراء الاختبار التشخيصي',
+                    //       textAlign: TextAlign.center,
+                    //       style: const TextStyle(
+                    //         fontFamily: 'Cairo',
+                    //         fontSize: 20,
+                    //         color: Color(0xFF1A6F8E),
+                    //       ),
+                    //     ),
+                    //   );
+                    // }
                     fields = data.entries.toList();
                     _initializeControllers(data);
 
