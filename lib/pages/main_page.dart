@@ -45,7 +45,7 @@ class _MainPageState extends State<MainPage> {
     HomePage(firstName: firstName, lastName: lastName, isLoading: isLoading,
       onStartDiagnostic: () => setState(() => _selectedIndex = 1),
     ),
-    const DiagnosticPage(),
+    DiagnosticPage( onStartRecomendations: () => setState(() => _selectedIndex = 2), ),
     const RecomandationsPage(),
     const ActionPlanPage(),
   ];

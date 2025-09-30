@@ -7,7 +7,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'diagnostic_result_page.dart';
 
 class DiagnosticPage extends StatefulWidget {
-  const DiagnosticPage({super.key});
+
+  final VoidCallback onStartRecomendations;
+
+  const DiagnosticPage(
+      {
+        super.key,
+        required this.onStartRecomendations,
+  });
 
   @override
   State<DiagnosticPage> createState() => _DiagnosticPageState();
@@ -569,9 +576,7 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                         });
                       }
                     },
-                    onCreatePlan: () {
-                      // Implement navigation to action plan if needed
-                    },
+                    onCreatePlan: widget.onStartRecomendations,
                   )
                   : _buildDiagnosticContent(context),
         ),

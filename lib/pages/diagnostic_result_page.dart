@@ -98,13 +98,15 @@ class DiagnosticResultPage extends StatelessWidget {
                       features: fields.map((f) => fieldNames[f]!).toList(),
                       data: [percentages], // percentages are 0–100
                       ticks: [20, 40, 60, 80, 100],
+                      sides: fields.length,
                       featuresTextStyle: const TextStyle(
                         fontFamily: 'Cairo',
                         fontSize: 13,
                         color: Color(0xFF1A6F8E),
                       ),
+
                       outlineColor: Colors.grey[300]!,
-                      graphColors: [const Color(0xFF1A6F8E)],
+                      graphColors: [Colors.brown ],
                     ),
                   ),
                 ),
@@ -220,7 +222,9 @@ class DiagnosticResultPage extends StatelessWidget {
                   ),
                 );
               }),
+
               const SizedBox(height: 24),
+
               Row(
                 children: [
                   Expanded(
