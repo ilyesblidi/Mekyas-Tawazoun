@@ -29,10 +29,11 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
 
   Future<void> _loadCachedThenFirestore() async {
     await _loadCachedRecommendations();
-    await _fetchAndUpdateFromFirestore();
     setState(() {
       isLoading = false;
     });
+    await _fetchAndUpdateFromFirestore();
+    _initializeControllers(recommendations);
   }
 
   Future<void> _loadCachedRecommendations() async {
@@ -46,19 +47,22 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
   Future<void> _fetchAndUpdateFromFirestore() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    final doc =
-        await FirebaseFirestore.instance
-            .collection('diagnostic_results')
-            .doc(user.uid)
-            .get();
-    if (doc.exists) {
-      final recs =
-          doc.data()?['recommendations'] as Map<String, dynamic>? ?? {};
-      if (recs.isNotEmpty) {
-        recommendations = recs;
-        await _cacheRecommendations(recs);
-        setState(() {});
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('diagnostic_results')
+          .doc(user.uid)
+          .get(const GetOptions(source: Source.server));
+      if (doc.exists) {
+        final recs =
+            doc.data()?['recommendations'] as Map<String, dynamic>? ?? {};
+        if (recs.isNotEmpty) {
+          recommendations = recs;
+          await _cacheRecommendations(recs);
+          setState(() {});
+        }
       }
+    } catch (e) {
+      // Optionally show error or fallback to cache
     }
   }
 
@@ -70,7 +74,7 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
   void _initializeControllers(Map<String, dynamic> data) {
     for (final field in data.keys) {
       recommendationControllers[field] ??= {};
-      final answers = Map<String, dynamic>.from(data[field]['answers'] ?? {});
+      final answers = Map<String, dynamic>.from(data[field] ?? {});
       for (final question in answers.keys) {
         final recText =
             recommendations[field] != null
@@ -99,6 +103,7 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
 
     recommendations = recs;
     await _cacheRecommendations(recs);
+    bool firestoreFailed = false;
 
     try {
       await FirebaseFirestore.instance
@@ -106,48 +111,68 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
           .doc(user.uid)
           .update({'recommendations': recs});
     } catch (e) {
-      // Firestore failed, but cache is updated
+      firestoreFailed = true;
     }
 
-    // Prepare action_plan items
+    // Load previous action plan from cache
+    final prefs = await SharedPreferences.getInstance();
+    List<Map<String, dynamic>> previousActionPlan = [];
+    final cachedJson = prefs.getString('action_plan');
+    if (cachedJson != null) {
+      previousActionPlan = List<Map<String, dynamic>>.from(json.decode(cachedJson));
+    }
+
+    // Build new action plan, preserving previous fields
     final List<Map<String, dynamic>> actionPlanItems = [];
     recs.forEach((field, questions) {
       questions.forEach((question, recommendation) {
-        actionPlanItems.add({
-          'محور': field,
-          'التوصيات_العملية': recommendation,
-          'سؤال': question,
-          // Add default fields for action plan
-          'عمق_الأثر': 1,
-          'سهولة_التطبيق': 1,
-          'الأولوية': 'منخفضة',
-          'البداية': null,
-          'النهاية': null,
-          'المدة_أيام': 0,
-          'حالة_المهمة': 'لم تبدأ بعد',
-          'التفاصيل_والتعليقات': '',
-        });
+        if (recommendation.isNotEmpty) {
+          // Try to find previous item
+          final prev = previousActionPlan.firstWhere(
+            (item) => item['محور'] == field && item['سؤال'] == question,
+            orElse: () => {},
+          );
+          actionPlanItems.add({
+            'محور': field,
+            'التوصيات_العملية': recommendation,
+            'سؤال': question,
+            'عمق_الأثر': prev['عمق_الأثر'] ?? 1,
+            'سهولة_التطبيق': prev['سهولة_التطبيق'] ?? 1,
+            'الأولوية': prev['الأولوية'] ?? 'منخفضة',
+            'البداية': prev['البداية'],
+            'النهاية': prev['النهاية'],
+            'المدة_أيام': prev['المدة_أيام'] ?? 0,
+            'حالة_المهمة': prev['حالة_المهمة'] ?? 'لم تبدأ بعد',
+            'التفاصيل_والتعليقات': prev['التفاصيل_والتعليقات'] ?? '',
+          });
+        }
       });
     });
 
     // Save to action_plan collection
-    final prefs = await SharedPreferences.getInstance();
     await prefs.setString('action_plan', json.encode(actionPlanItems));
     try {
       await FirebaseFirestore.instance
           .collection('action_plan')
           .doc(user.uid)
           .set({
-        'action_plan': actionPlanItems,
-        'updated_at': FieldValue.serverTimestamp(),
-      });
+            'action_plan': actionPlanItems,
+            'updated_at': FieldValue.serverTimestamp(),
+          });
     } catch (e) {
-      // Firestore failed, but cache is updated
+      // Ignore, already saved locally
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('تم حفظ التوصيات بنجاح')));
+    // Always show confirmation
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          firestoreFailed
+              ? 'فشل حفظ التوصيات في السحابة، تم الحفظ محلياً'
+              : 'تم حفظ التوصيات بنجاح',
+        ),
+      ),
+    );
   }
 
   @override
@@ -157,7 +182,7 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
       child: Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: const Text('التوصيات', style: TextStyle(fontFamily: 'Cairo')),
+          title: const Text('التوصيات العملية', style: TextStyle(fontFamily: 'Cairo')),
           backgroundColor: Colors.white,
           iconTheme: const IconThemeData(color: Color(0xFF1A6F8E)),
           elevation: 1,
@@ -169,10 +194,6 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
                     radius: 40,
                     lineWidth: 7,
                     percent: 1,
-                    // center: CircularProgressIndicator(
-                    //   color: Color(0xFF1A6F8E),
-                    //   strokeWidth: 5,
-                    // ),
                     progressColor: Color(0xFF1A6F8E),
                     backgroundColor: Colors.grey[200]!,
                     animation: true,
@@ -191,21 +212,7 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
                           snapshot.data!.data() as Map<String, dynamic>;
                       data = docData['answers'] as Map<String, dynamic>? ?? {};
                     }
-                    // if (data.isEmpty) {
-                    //   return Center(
-                    //     child: Text(
-                    //       'لم تقم بإجراء الاختبار التشخيصي بعد\nيرجى إجراء الاختبار التشخيصي',
-                    //       textAlign: TextAlign.center,
-                    //       style: const TextStyle(
-                    //         fontFamily: 'Cairo',
-                    //         fontSize: 20,
-                    //         color: Color(0xFF1A6F8E),
-                    //       ),
-                    //     ),
-                    //   );
-                    // }
                     fields = data.entries.toList();
-                    _initializeControllers(data);
 
                     return ListView.builder(
                       padding: const EdgeInsets.all(16),
@@ -294,20 +301,23 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
                                       final qEntry = answers.entries.elementAt(
                                         qIdx,
                                       );
+                                      final controller =
+                                          recommendationControllers[fieldName]?[qEntry
+                                              .key] ??
+                                          TextEditingController(
+                                            text:
+                                                recommendations[fieldName] !=
+                                                        null
+                                                    ? (recommendations[fieldName][qEntry
+                                                            .key] ??
+                                                        '')
+                                                    : '',
+                                          );
                                       recommendationControllers[fieldName] ??=
                                           {};
                                       recommendationControllers[fieldName]![qEntry
-                                          .key] ??= TextEditingController(
-                                        text:
-                                            recommendations[fieldName] != null
-                                                ? (recommendations[fieldName][qEntry
-                                                        .key] ??
-                                                    '')
-                                                : '',
-                                      );
-                                      final controller =
-                                          recommendationControllers[fieldName]![qEntry
-                                              .key]!;
+                                              .key] =
+                                          controller;
 
                                       return Column(
                                         crossAxisAlignment:
@@ -363,12 +373,11 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
                                                     ),
                                               ),
                                               maxLines: 2,
-                                              onChanged: (val) {
-                                                recommendations[fieldName] ??=
-                                                    {};
-                                                recommendations[fieldName][qEntry
-                                                        .key] =
-                                                    val;
+                                              onChanged: (val) async {
+                                                recommendations[fieldName] ??= {};
+                                                recommendations[fieldName][qEntry.key] = val;
+                                                final prefs = await SharedPreferences.getInstance();
+                                                await prefs.setString('recommendations', json.encode(recommendations));
                                               },
                                             ),
                                           ),
