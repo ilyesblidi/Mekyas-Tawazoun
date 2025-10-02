@@ -104,8 +104,8 @@ class _HomePageState extends State<HomePage> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.balance, color: Color(0xFF006D77), size: 32),
-            const SizedBox(width: 8),
+            // const Icon(Icons.balance, color: Color(0xFF006D77), size: 32),
+            // const SizedBox(width: 8),
             const Text(
               'مقياس التوازن الشخصي',
               style: TextStyle(

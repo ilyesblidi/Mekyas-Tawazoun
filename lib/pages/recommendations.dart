@@ -182,7 +182,13 @@ class _RecomandationsPageState extends State<RecomandationsPage> {
       child: Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: const Text('التوصيات العملية', style: TextStyle(fontFamily: 'Cairo')),
+          title: const Text('التوصيات العملية',
+            style: TextStyle(
+              fontFamily: 'Cairo',
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A6F8E),
+            ),
+          ),
           backgroundColor: Colors.white,
           iconTheme: const IconThemeData(color: Color(0xFF1A6F8E)),
           elevation: 1,
